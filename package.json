@@ -1,0 +1,38 @@
+{
+  "dependencies": {
+    "clsx": "^2.1.1",
+    "dompurify": "^3.4.15",
+    "lucide-react": "^1.41.0",
+    "motion": "^13.2.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "react-globe.gl": "^2.38.0",
+    "recharts": "^3.10.1",
+    "tailwind-merge": "^3.6.0",
+    "three": "^0.185.1"
+  },
+  "name": "applet",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "vite build",
+    "dev": "vite"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/dompurify": "^3.0.5",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.7",
+    "@vitejs/plugin-react": "^6.1.1",
+    "autoprefixer": "^10.5.5",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^7.0.2",
+    "vite": "^8.2.2"
+  },
+  "type": "module"
+}
