@@ -2,6 +2,8 @@
   "dependencies": {
     "clsx": "^2.1.1",
     "dompurify": "^3.4.15",
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.8",
     "lucide-react": "^1.41.0",
     "motion": "^13.2.0",
     "react": "^19.2.8",

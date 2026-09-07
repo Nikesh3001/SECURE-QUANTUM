@@ -1,1 +1,9 @@
 @import "tailwindcss";
+
+body {
+  transition: filter 0.5s ease-in-out;
+}
+
+.breach-mode {
+  filter: invert(1) hue-rotate(180deg);
+}

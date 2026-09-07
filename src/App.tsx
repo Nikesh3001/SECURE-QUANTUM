@@ -26,6 +26,9 @@ import ForensicsTimeline from './components/ForensicsTimeline';
 import PatternRecognition from './components/PatternRecognition';
 import PredictiveProfile from './components/PredictiveProfile';
 import GlobalThreatFeed from './components/GlobalThreatFeed';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import { useBreachMode } from './hooks/useBreachMode';
 
 // --- Mock Data & Helpers ---
 const generateIP = () => `${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}`;
@@ -126,6 +129,9 @@ export default function App() {
   const isAudioEnabledRef = useRef(isAudioEnabled);
   const [bottomTab, setBottomTab] = useState<'flow' | 'profile'>('flow');
   const [trafficFilter, setTrafficFilter] = useState<'ALL' | 'CRITICAL'>('ALL');
+
+  // Trigger breach mode CSS filter when actively under attack
+  useBreachMode(attackState !== 'idle' && attackState !== 'mitigated');
 
   useEffect(() => {
     isAudioEnabledRef.current = isAudioEnabled;
@@ -321,37 +327,79 @@ STATUS: Perimeter secured. Original IP blacklisted.`;
   }, [attackState]);
 
   const downloadIncidentReport = () => {
-    const report = {
-      incident_id: `INC-${Math.floor(Math.random() * 1000000)}`,
-      timestamp: new Date().toISOString(),
-      threat_analysis: {
-        type: "Zero-Day APT",
-        source_ip: attackerInfo?.ip || maliciousIP || "185.15.22.104",
-        target_protocol: "TCP/UNKNOWN",
-        risk_score: 98,
-        model_confidence: 98.7,
-      },
-      quantum_telemetry: {
-        classifier: "Qiskit Aer SVM",
-        kernel: "Quantum Feature Map (ZZFeatureMap)",
-        anomaly_deviation_sigma: 4.2
-      },
-      geo_intelligence: {
-        location: attackerInfo?.locString || "St. Petersburg, RU (Simulated)",
-        asn: attackerInfo?.asn || "AS49453 Global Proxy Network"
-      },
-      status: attackState === 'mitigated' ? 'MITIGATED' : 'ACTIVE_THREAT'
-    };
-
-    const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `incident_report_${report.incident_id}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    const incidentId = `INC-${Math.floor(Math.random() * 1000000)}`;
+    
+    const doc = new jsPDF();
+    
+    // Header
+    doc.setFontSize(22);
+    doc.setTextColor(220, 53, 69);
+    doc.text("INCIDENT POST-MORTEM REPORT", 14, 20);
+    
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 28);
+    doc.text(`Incident ID: ${incidentId}`, 14, 33);
+    
+    // Content 1
+    doc.setFontSize(14);
+    doc.setTextColor(0);
+    doc.text("1. Threat Analysis", 14, 45);
+    
+    autoTable(doc, {
+      startY: 50,
+      head: [['Metric', 'Value']],
+      body: [
+        ['Threat Type', 'Zero-Day APT'],
+        ['Source IP', attackerInfo?.ip || maliciousIP || "185.15.22.104"],
+        ['Target Protocol', 'TCP/UNKNOWN'],
+        ['Risk Score', '98/100'],
+        ['Model Confidence', '98.7%'],
+        ['Status', attackState === 'mitigated' ? 'MITIGATED' : 'ACTIVE THREAT']
+      ],
+      theme: 'grid',
+      headStyles: { fillColor: [40, 40, 40] }
+    });
+    
+    const finalY1 = (doc as any).lastAutoTable.finalY || 50;
+    
+    // Content 2
+    doc.setFontSize(14);
+    doc.text("2. Quantum Telemetry & Geo-Intelligence", 14, finalY1 + 15);
+    
+    autoTable(doc, {
+      startY: finalY1 + 20,
+      head: [['Attribute', 'Value']],
+      body: [
+        ['Location', attackerInfo?.locString || "St. Petersburg, RU (Simulated)"],
+        ['ASN', attackerInfo?.asn || "AS49453 Global Proxy Network"],
+        ['Classifier', 'Qiskit Aer SVM'],
+        ['Kernel', 'Quantum Feature Map (ZZFeatureMap)'],
+        ['Anomaly Sigma', '4.2']
+      ],
+      theme: 'grid',
+      headStyles: { fillColor: [40, 40, 40] }
+    });
+    
+    const finalY2 = (doc as any).lastAutoTable.finalY || finalY1 + 20;
+    
+    // Content 3
+    doc.setFontSize(14);
+    doc.text("3. Autonomous Mitigation Sequence", 14, finalY2 + 15);
+    
+    doc.setFontSize(10);
+    doc.setTextColor(50);
+    const mitigationText = [
+      "1. Agent predicted Escalation (85% probability) based on exploit pattern.",
+      "2. Dynamic VLAN micro-segmentation deployed to block lateral movement.",
+      "3. Temporal correlation attack successfully bypassed attacker's VPN/Tor proxy.",
+      `4. True Origin Unmasked: ${trueOrigin?.ip || '77.88.99.11'} (${trueOrigin?.locString || 'Unknown'})`,
+      "STATUS: Perimeter secured. Original IP blacklisted."
+    ];
+    
+    doc.text(mitigationText, 14, finalY2 + 22, { lineHeightFactor: 1.5 });
+    
+    doc.save(`incident_report_${incidentId}.pdf`);
   };
 
   const downloadLogsCSV = () => {
@@ -476,13 +524,24 @@ STATUS: Perimeter secured. Original IP blacklisted.`;
             
             {/* Top Metrics Row */}
             <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            <div className={`p-4 rounded-sm border transition-colors flex flex-col justify-between ${globalRisk > 75 ? 'bg-[#ff4444]/10 border-[#ff4444]' : 'bg-[#09090b] border-[#27272a] shadow-[0_4px_12px_rgba(0,0,0,0.5)]'}`}>
-              <div className="flex justify-between items-start">
-                <div>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-[#71717a]">Global Risk Score</p>
-                  <h3 className={`text-3xl font-mono font-bold mt-2 ${globalRisk > 75 ? 'text-[#ff4444]' : 'text-white'}`}>{globalRisk}<span className="text-[11px] text-[#52525b] font-normal">/100</span></h3>
+            <div className={`p-4 rounded-sm border transition-colors flex items-center justify-between ${globalRisk > 75 ? 'bg-[#ff4444]/10 border-[#ff4444]' : 'bg-[#09090b] border-[#27272a] shadow-[0_4px_12px_rgba(0,0,0,0.5)]'}`}>
+              <div className="flex flex-col justify-between h-full">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-[#71717a] mb-2">Global Risk Score</p>
+                <div className="flex items-center gap-2 mt-auto">
+                  <ShieldAlert className={`w-4 h-4 ${globalRisk > 75 ? 'text-[#ff4444] animate-bounce' : 'text-[#00C851]'}`} />
+                  <span className={`text-[9px] font-bold tracking-widest uppercase ${globalRisk > 75 ? 'text-[#ff4444]' : 'text-[#00C851]'}`}>
+                    {globalRisk > 75 ? 'CRITICAL' : 'NOMINAL'}
+                  </span>
                 </div>
-                <ShieldAlert className={`w-5 h-5 ${globalRisk > 75 ? 'text-[#ff4444] animate-bounce' : 'text-[#00C851]'}`} />
+              </div>
+              <div className="relative w-14 h-14 shrink-0 flex items-center justify-center">
+                <svg className="w-full h-full -rotate-90 transform" viewBox="0 0 36 36">
+                  <path className="text-[#27272a]" strokeWidth="3" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                  <path className={`transition-all duration-1000 ease-out ${globalRisk > 75 ? 'text-[#ff4444]' : globalRisk > 40 ? 'text-[#ffbb33]' : 'text-[#00C851]'}`} strokeWidth="3" strokeDasharray={`${globalRisk}, 100`} stroke="currentColor" fill="none" strokeLinecap="round" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className={`text-[12px] font-mono font-bold ${globalRisk > 75 ? 'text-[#ff4444]' : 'text-white'}`}>{globalRisk}</span>
+                </div>
               </div>
             </div>
             
@@ -562,48 +621,21 @@ STATUS: Perimeter secured. Original IP blacklisted.`;
             {/* Left Column: Chart & Map */}
             <div className="lg:col-span-7 flex flex-col gap-4">
               
-              {/* Chart Section */}
-              <div className="flex-1 p-4 rounded-sm bg-[#09090b] border border-[#27272a] flex flex-col shadow-[0_4px_12px_rgba(0,0,0,0.5)]">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-[11px] font-bold uppercase tracking-widest text-[#a1a1aa]">Real-Time Entropy Projection</h3>
-                  <div className="text-[10px] font-mono text-[#00e5ff] flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#00e5ff] animate-ping"></span>
-                    LIVE TELEMETRY
-                  </div>
-                </div>
-                <div className="flex-1 w-full text-[10px] font-mono">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={chartData} margin={{ top: 5, right: 20, bottom: 5, left: -20 }}>
-                      <CartesianGrid strokeDasharray="1 3" stroke="#27272a" vertical={false} />
-                      <XAxis dataKey="batch" stroke="#52525b" tick={{fill: '#71717a', fontSize: 10}} axisLine={false} tickLine={false} />
-                      <YAxis domain={[40, 100]} stroke="#52525b" tick={{fill: '#71717a', fontSize: 10}} axisLine={false} tickLine={false} />
-                      <RechartsTooltip 
-                        contentStyle={{ backgroundColor: '#18181b', borderColor: '#3f3f46', borderRadius: '2px', fontSize: '10px', boxShadow: '0 4px 12px rgba(0,0,0,0.5)' }}
-                        itemStyle={{ color: '#e4e4e7' }}
-                      />
-                      <Legend wrapperStyle={{ paddingTop: '10px', fontSize: '10px', color: '#a1a1aa' }} iconType="rect" iconSize={8} />
-                      <Line type="step" name="Legacy Binary Baseline" dataKey="rf" stroke="#52525b" strokeWidth={2} dot={false} activeDot={{r: 4}} isAnimationActive={false} />
-                      <Line type="step" name="Predictive AI Model" dataKey="qsvm" stroke="#00e5ff" strokeWidth={2} dot={false} activeDot={{r: 4, fill: '#ffbb33'}} isAnimationActive={false} />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
+              {/* Threat Map Section (Replaces Entropy Projection) */}
+              <div className="flex-1 rounded-sm overflow-hidden relative border border-[#27272a] shadow-[0_4px_12px_rgba(0,0,0,0.5)] bg-[#09090b]">
+                <ThreatMap 
+                  attackState={attackState} 
+                  maliciousIP={maliciousIP} 
+                  attackerInfo={attackerInfo} 
+                  trueOrigin={trueOriginInfo}
+                />
               </div>
 
               {/* Pattern Recognition Section */}
               <PatternRecognition attackState={attackState} activeOwasp={activeOwasp} />
 
-              {/* Lower Section: Threat Map & Pie Chart */}
+              {/* Lower Section: Attack Vectors Pie Chart */}
               <div className="flex-[0.8] flex gap-4 min-h-[220px]">
-                {/* Threat Map Section */}
-                <div className="flex-[2] rounded-sm overflow-hidden relative border border-[#27272a] shadow-[0_4px_12px_rgba(0,0,0,0.5)]">
-                  <ThreatMap 
-                    attackState={attackState} 
-                    maliciousIP={maliciousIP} 
-                    attackerInfo={attackerInfo} 
-                    trueOrigin={trueOriginInfo}
-                  />
-                </div>
-                
                 {/* Attack Vectors Pie Chart */}
                 <div className="flex-1 p-4 rounded-sm bg-[#09090b] border border-[#27272a] flex flex-col shadow-[0_4px_12px_rgba(0,0,0,0.5)]">
                   <h3 className="text-[11px] font-bold uppercase tracking-widest text-[#71717a] mb-2">Recent Vectors</h3>

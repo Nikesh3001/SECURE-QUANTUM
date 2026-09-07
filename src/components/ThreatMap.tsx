@@ -155,6 +155,31 @@ export default function ThreatMap({ attackState, maliciousIP, attackerInfo, true
     return points;
   }, [isAttacking, attackerInfo, isTracing, trueOrigin]);
 
+  const activeElements = useMemo(() => {
+    const elements: any[] = [];
+    // Arc labels
+    activeArcs.slice(-5).forEach(arc => {
+      elements.push({
+        type: 'arc',
+        lat: (arc as ArcData).startLat,
+        lng: (arc as ArcData).startLng,
+        color: (arc as ArcData).color,
+        label: (arc as ArcData).label
+      });
+    });
+    // Point pins
+    pointsData.forEach(pt => {
+      elements.push({
+        type: 'pin',
+        lat: pt.lat,
+        lng: pt.lng,
+        color: pt.color,
+        label: pt.label
+      });
+    });
+    return elements;
+  }, [activeArcs, pointsData]);
+
   return (
     <div className="w-full h-full relative bg-[#09090b] rounded-sm border border-[#27272a] overflow-hidden flex flex-col shadow-[0_4px_12px_rgba(0,0,0,0.5)]">
       <div className="absolute top-4 left-4 z-10 pointer-events-none">
@@ -186,17 +211,33 @@ export default function ThreatMap({ attackState, maliciousIP, attackerInfo, true
           pointAltitude="size"
           pointRadius={0.5}
           pointsMerge={true}
+
+          ringsData={pointsData.filter(p => p.color === '#ff4444')}
+          ringColor="color"
+          ringMaxRadius={5}
+          ringPropagationSpeed={2}
+          ringRepeatPeriod={700}
           
-          htmlElementsData={activeArcs.slice(-5)} // Only show labels for latest 5 to avoid clutter
+          htmlElementsData={activeElements}
           htmlElement={(d: any) => {
             const el = document.createElement('div');
-            el.innerHTML = `<div class="bg-[#18181b] border ${d.color === '#ff4444' ? 'border-[#ff4444]' : d.color === '#00e5ff' ? 'border-[#00e5ff]' : 'border-[#27272a]'} px-1.5 py-0.5 rounded-sm shadow-lg pointer-events-none">
-              <p class="text-[7px] font-mono whitespace-nowrap" style="color: ${d.color}">${d.label}</p>
-            </div>`;
+            if (d.type === 'pin') {
+              const isCritical = d.color === '#ff4444';
+              el.innerHTML = `
+                <div class="relative flex items-center justify-center -translate-x-1/2 -translate-y-1/2 pointer-events-none">
+                  ${isCritical ? `<div class="absolute w-6 h-6 rounded-full bg-[#ff4444] animate-ping opacity-75"></div>` : ''}
+                  <div class="w-2 h-2 rounded-full z-10" style="background-color: ${d.color}; box-shadow: 0 0 10px ${d.color}"></div>
+                </div>
+              `;
+            } else {
+              el.innerHTML = `<div class="bg-[#18181b] border ${d.color === '#ff4444' ? 'border-[#ff4444]' : d.color === '#00e5ff' ? 'border-[#00e5ff]' : 'border-[#27272a]'} px-1.5 py-0.5 rounded-sm shadow-lg pointer-events-none">
+                <p class="text-[7px] font-mono whitespace-nowrap" style="color: ${d.color}">${d.label}</p>
+              </div>`;
+            }
             return el;
           }}
-          htmlLat={d => (d as ArcData).startLat}
-          htmlLng={d => (d as ArcData).startLng}
+          htmlLat={(d: any) => d.lat}
+          htmlLng={(d: any) => d.lng}
         />
         )}
       </div>
