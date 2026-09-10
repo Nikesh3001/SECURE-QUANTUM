@@ -26,6 +26,7 @@ import ForensicsTimeline from './components/ForensicsTimeline';
 import PatternRecognition from './components/PatternRecognition';
 import PredictiveProfile from './components/PredictiveProfile';
 import GlobalThreatFeed from './components/GlobalThreatFeed';
+import ErrorBoundary from './components/ErrorBoundary';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { useBreachMode } from './hooks/useBreachMode';
@@ -623,12 +624,14 @@ STATUS: Perimeter secured. Original IP blacklisted.`;
               
               {/* Threat Map Section (Replaces Entropy Projection) */}
               <div className="flex-1 rounded-sm overflow-hidden relative border border-[#27272a] shadow-[0_4px_12px_rgba(0,0,0,0.5)] bg-[#09090b]">
-                <ThreatMap 
-                  attackState={attackState} 
-                  maliciousIP={maliciousIP} 
-                  attackerInfo={attackerInfo} 
-                  trueOrigin={trueOriginInfo}
-                />
+                <ErrorBoundary fallbackTitle="3D Global Threat Map Telemetry">
+                  <ThreatMap 
+                    attackState={attackState} 
+                    maliciousIP={maliciousIP} 
+                    attackerInfo={attackerInfo} 
+                    trueOrigin={trueOriginInfo}
+                  />
+                </ErrorBoundary>
               </div>
 
               {/* Pattern Recognition Section */}

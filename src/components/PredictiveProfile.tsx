@@ -1,5 +1,6 @@
 import { motion } from 'motion/react';
 import { ShieldAlert, Crosshair, Cpu, Database, Activity, GitBranch } from 'lucide-react';
+import AttackerPortfolio from './AttackerPortfolio';
 
 interface PredictiveProfileProps {
   attackState: string;
@@ -62,17 +63,12 @@ export default function PredictiveProfile({ attackState, activeOwasp }: Predicti
   }
 
   return (
-    <div className="w-full h-full p-4 overflow-y-auto text-[#e4e4e7]">
-      {!profileData ? (
-        <div className="h-full flex flex-col items-center justify-center text-[#52525b] opacity-50 space-y-2">
-          <ShieldAlert className="w-8 h-8 mb-2" />
-          <p className="text-[10px] uppercase tracking-widest text-center">No Active Threat Profile</p>
-        </div>
-      ) : (
+    <div className="w-full h-full p-4 text-[#e4e4e7] flex flex-col gap-6 overflow-hidden">
+      {profileData && (
         <motion.div 
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="space-y-4"
+          className="space-y-4 shrink-0 overflow-y-auto max-h-[50%]"
         >
           <div className="flex items-center justify-between border-b border-[#27272a] pb-2">
             <h4 className="text-[11px] font-bold uppercase tracking-widest text-[#00e5ff] flex items-center gap-2">
@@ -135,6 +131,9 @@ export default function PredictiveProfile({ attackState, activeOwasp }: Predicti
           </div>
         </motion.div>
       )}
+
+      {/* Embedded Attacker Portfolio */}
+      <AttackerPortfolio />
     </div>
   );
 }

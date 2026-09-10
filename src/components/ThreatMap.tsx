@@ -73,14 +73,22 @@ export default function ThreatMap({ attackState, maliciousIP, attackerInfo, true
     return () => observer.disconnect();
   }, []);
 
-  // Autoplay rotation and set initial camera
+  // Autoplay rotation and set initial camera safely
   useEffect(() => {
     if (globeRef.current) {
-      globeRef.current.controls().autoRotate = true;
-      globeRef.current.controls().autoRotateSpeed = 1;
-      globeRef.current.controls().enableZoom = true;
-      // Set altitude higher to ensure full globe is visible
-      globeRef.current.pointOfView({ altitude: 2.8 });
+      try {
+        const controls = typeof globeRef.current.controls === 'function' ? globeRef.current.controls() : null;
+        if (controls) {
+          controls.autoRotate = true;
+          controls.autoRotateSpeed = 1;
+          controls.enableZoom = true;
+        }
+        if (typeof globeRef.current.pointOfView === 'function') {
+          globeRef.current.pointOfView({ altitude: 2.8 });
+        }
+      } catch (e) {
+        console.warn('Globe controls initialization deferred:', e);
+      }
     }
   }, [dimensions.width, dimensions.height]); // Re-run when dimension is first set
 
@@ -213,7 +221,9 @@ export default function ThreatMap({ attackState, maliciousIP, attackerInfo, true
           pointsMerge={true}
 
           ringsData={pointsData.filter(p => p.color === '#ff4444')}
-          ringColor="color"
+          ringLat={(d: any) => d.lat}
+          ringLng={(d: any) => d.lng}
+          ringColor={(d: any) => d.color || '#ff4444'}
           ringMaxRadius={5}
           ringPropagationSpeed={2}
           ringRepeatPeriod={700}
