@@ -159,8 +159,11 @@ export default function App() {
     const interval = setInterval(() => {
       // Update PPS randomly
       const ppsFluctuation = Math.floor(Math.random() * 500) - 250;
-      setCurrentPps(prev => Math.max(1000, prev + ppsFluctuation));
-      setPacketCount(prev => prev + Math.floor(currentPps / 2)); // simulate per-tick addition
+      setCurrentPps(prev => {
+        const nextPps = Math.max(1000, prev + ppsFluctuation);
+        setPacketCount(p => p + Math.floor(nextPps / 2)); // simulate per-tick addition
+        return nextPps;
+      });
 
       // Update Latency
       setLatencyData(prev => {
@@ -209,11 +212,10 @@ export default function App() {
         setCoherenceTime(40 + Math.random() * 50); // oscillating during intensive computation
         setGlobalRisk(prev => Math.min(98, prev + 15)); // spike risk
       }
-
     }, 800);
 
     return () => clearInterval(interval);
-  }, [currentPps, attackState, maliciousIP]);
+  }, [attackState, maliciousIP]);
 
   // --- Autonomous Agent Sequence ---
   const triggerAutonomousDefenseRef = useRef<(() => void) | undefined>(undefined);
@@ -317,7 +319,7 @@ STATUS: Perimeter secured. Original IP blacklisted.`;
   useEffect(() => {
     let timeout: ReturnType<typeof setTimeout>;
     if (attackState === 'idle' || attackState === 'mitigated') {
-      const delay = Math.floor(Math.random() * 300000) + 300000; // Random delay between 5m and 10m
+      const delay = 80000; // 80 seconds
       timeout = setTimeout(() => {
         if (triggerAutonomousDefenseRef.current) {
           triggerAutonomousDefenseRef.current();
@@ -394,7 +396,7 @@ STATUS: Perimeter secured. Original IP blacklisted.`;
       "1. Agent predicted Escalation (85% probability) based on exploit pattern.",
       "2. Dynamic VLAN micro-segmentation deployed to block lateral movement.",
       "3. Temporal correlation attack successfully bypassed attacker's VPN/Tor proxy.",
-      `4. True Origin Unmasked: ${trueOrigin?.ip || '77.88.99.11'} (${trueOrigin?.locString || 'Unknown'})`,
+      `4. True Origin Unmasked: ${trueOriginInfo?.ip || '77.88.99.11'} (${trueOriginInfo?.locString || 'Unknown'})`,
       "STATUS: Perimeter secured. Original IP blacklisted."
     ];
     
@@ -618,12 +620,12 @@ STATUS: Perimeter secured. Original IP blacklisted.`;
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 h-[680px]">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 h-auto lg:h-[680px]">
             {/* Left Column: Chart & Map */}
             <div className="lg:col-span-7 flex flex-col gap-4">
               
               {/* Threat Map Section (Replaces Entropy Projection) */}
-              <div className="flex-1 rounded-sm overflow-hidden relative border border-[#27272a] shadow-[0_4px_12px_rgba(0,0,0,0.5)] bg-[#09090b]">
+              <div className="min-h-[350px] lg:min-h-0 flex-1 rounded-sm overflow-hidden relative border border-[#27272a] shadow-[0_4px_12px_rgba(0,0,0,0.5)] bg-[#09090b]">
                 <ErrorBoundary fallbackTitle="3D Global Threat Map Telemetry">
                   <ThreatMap 
                     attackState={attackState} 
@@ -672,12 +674,12 @@ STATUS: Perimeter secured. Original IP blacklisted.`;
             </div>
 
             {/* Timeline */}
-            <div className="lg:col-span-2 flex flex-col h-full">
+            <div className="min-h-[400px] lg:min-h-0 lg:col-span-2 flex flex-col h-full">
               <ForensicsTimeline attackState={attackState} />
             </div>
 
             {/* Autonomous Cognitive Core */}
-            <div className="lg:col-span-3 flex flex-col h-full">
+            <div className="min-h-[500px] lg:min-h-0 lg:col-span-3 flex flex-col h-full">
               <AgentCore 
                 logs={agentLogs} 
                 isActive={attackState !== 'idle' && attackState !== 'mitigated'} 

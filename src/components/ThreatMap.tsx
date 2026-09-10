@@ -95,10 +95,6 @@ export default function ThreatMap({ attackState, maliciousIP, attackerInfo, true
   // Generate random background connections to simulate server requests (OWASP Top 10)
   useEffect(() => {
     const interval = setInterval(() => {
-      if (backgroundArcs.length > 15) {
-        setBackgroundArcs(prev => prev.slice(1));
-      }
-      
       const origin = RANDOM_ORIGINS[Math.floor(Math.random() * RANDOM_ORIGINS.length)];
       const owaspConcept = OWASP_CATEGORIES[Math.floor(Math.random() * OWASP_CATEGORIES.length)];
       
@@ -111,11 +107,15 @@ export default function ThreatMap({ attackState, maliciousIP, attackerInfo, true
         label: owaspConcept
       };
 
-      setBackgroundArcs(prev => [...prev, newArc]);
+      setBackgroundArcs(prev => {
+        let next = prev;
+        if (next.length > 15) next = next.slice(1);
+        return [...next, newArc];
+      });
     }, 400);
 
     return () => clearInterval(interval);
-  }, [backgroundArcs]);
+  }, []);
 
   // Combine background traffic with active threat trajectories
   const activeArcs = useMemo(() => {
